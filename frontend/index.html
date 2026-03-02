@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Execution Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="top-header">
+  <div>
+    <h1>Execution Dashboard</h1>
+    <p class="subtitle">Behavior → Consistency → Rank</p>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- LEFT -->
+  <section class="goals-section">
+    <h3>Daily Execution</h3>
+    <div id="goalsSection"></div>
+  </section>
+
+  <!-- RIGHT -->
+  <section class="heatmap-section">
+    <h3>Execution Record</h3>
+
+    <!-- OVERALL CIRCLE -->
+    <div class="overall-block">
+      <div class="overall-ring" id="overallRing">
+        <span id="overallPercent">0%</span>
+      </div>
+      <div class="overall-label">Overall</div>
+    </div>
+
+    <!-- GRADE -->
+    <div class="grade-block">
+      <div id="gradeText" class="grade-text">Grade D — 0%</div>
+      <div class="grade-track">
+        <div id="gradeBar" class="grade-fill D"></div>
+      </div>
+      <div id="gradeNext" class="grade-next"></div>
+    </div>
+
+    <!-- STREAKS -->
+    <div class="streaks">
+      <span>Current: <strong id="streakNow">0</strong></span>
+      <span>Longest: <strong id="streakBest">0</strong></span>
+    </div>
+
+    <!-- HEATMAP -->
+    <div id="heatmap" class="heatmap"></div>
+  </section>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
