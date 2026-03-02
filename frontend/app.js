@@ -1,4 +1,4 @@
-const API = null;
+/* ================= CONFIG ================= */
 
 const START = new Date("2026-03-03");
 const END = new Date("2026-03-10");
@@ -9,6 +9,8 @@ const GOALS = [
   { name: "Exercise", icon: "🏋️" },
   { name: "UX/UI 5–6 AM", icon: "🎨" }
 ];
+
+/* ================= ELEMENTS ================= */
 
 const goalsSection = document.getElementById("goalsSection");
 const heatmap = document.getElementById("heatmap");
@@ -23,25 +25,37 @@ const gradeNext = document.getElementById("gradeNext");
 const streakNow = document.getElementById("streakNow");
 const streakBest = document.getElementById("streakBest");
 
+/* ================= STATE ================= */
+
 let dates = [];
 let entries = [];
 
-/* Generate Dates */
+/* ================= DATE GENERATION ================= */
+
 for (let d = new Date(START); d <= END; d.setDate(d.getDate() + 1)) {
   dates.push({
     iso: d.toISOString().split("T")[0],
-    label: d.toLocaleDateString("en-US", { weekday: "short", day: "numeric" })
+    label: d.toLocaleDateString("en-US", {
+      weekday: "short",
+      day: "numeric"
+    })
   });
 }
 
-/* Load */
-async function load() {
-  const res = await fetch(`${API}/entries`);
-  entries = await res.json();
+/* ================= STORAGE ================= */
+
+function load() {
+  const stored = localStorage.getItem("entries");
+  entries = stored ? JSON.parse(stored) : [];
   render();
 }
 
-/* Render All */
+function saveToStorage() {
+  localStorage.setItem("entries", JSON.stringify(entries));
+}
+
+/* ================= RENDER ALL ================= */
+
 function render() {
   renderGoals();
   renderHeatmap();
@@ -50,7 +64,8 @@ function render() {
   renderStreaks();
 }
 
-/* Goals */
+/* ================= GOALS ================= */
+
 function renderGoals() {
   goalsSection.innerHTML = "";
 
@@ -75,19 +90,34 @@ function renderGoals() {
       const cell = document.createElement("div");
       cell.className = "goal-cell";
 
-      if (entries.find(e => e.habit === goal.name && e.date === date.iso && e.done)) {
-        cell.classList.add("active");
-      }
+      const existing = entries.find(e =>
+        e.habit === goal.name &&
+        e.date === date.iso &&
+        e.done
+      );
 
-      cell.onclick = async () => {
+      if (existing) cell.classList.add("active");
+
+      cell.onclick = () => {
         const active = cell.classList.toggle("active");
 
-        const idx = entries.findIndex(e => e.habit === goal.name && e.date === date.iso);
-        if (idx >= 0) entries[idx].done = active;
-        else entries.push({ habit: goal.name, date: date.iso, done: active });
+        const idx = entries.findIndex(e =>
+          e.habit === goal.name &&
+          e.date === date.iso
+        );
 
+        if (idx >= 0) {
+          entries[idx].done = active;
+        } else {
+          entries.push({
+            habit: goal.name,
+            date: date.iso,
+            done: active
+          });
+        }
+
+        saveToStorage();
         render();
-        await save(goal.name, date.iso, active);
       };
 
       grid.appendChild(cell);
@@ -97,19 +127,23 @@ function renderGoals() {
   });
 }
 
-/* Heatmap */
+/* ================= HEATMAP ================= */
+
 function renderHeatmap() {
   heatmap.innerHTML = "";
 
   dates.forEach(date => {
-    const done = entries.filter(e => e.date === date.iso && e.done).length;
-    const pct = (done / GOALS.length) * 100;
+    const doneCount = entries.filter(e =>
+      e.date === date.iso && e.done
+    ).length;
+
+    const percent = (doneCount / GOALS.length) * 100;
 
     let cls = "";
-    if (pct === 100) cls = "perfect";
-    else if (pct >= 67) cls = "strong";
-    else if (pct >= 34) cls = "ok";
-    else if (pct > 0) cls = "weak";
+    if (percent === 100) cls = "perfect";
+    else if (percent >= 67) cls = "strong";
+    else if (percent >= 34) cls = "ok";
+    else if (percent > 0) cls = "weak";
 
     const box = document.createElement("div");
     box.className = `day-box ${cls}`;
@@ -117,72 +151,85 @@ function renderHeatmap() {
   });
 }
 
-/* Overall Circle */
+/* ================= OVERALL CIRCLE ================= */
+
 function renderOverall() {
   const total = GOALS.length * dates.length;
   const done = entries.filter(e => e.done).length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
+  const percent = total ? Math.round((done / total) * 100) : 0;
 
   overallRing.style.background =
-    `conic-gradient(#111 ${pct}%, #E5E7EB 0%)`;
+    `conic-gradient(#111 ${percent}%, #E5E7EB 0%)`;
 
-  overallPercent.textContent = `${pct}%`;
+  overallPercent.textContent = `${percent}%`;
 }
 
-/* Grade */
+/* ================= GRADE ================= */
+
 function renderGrade() {
-  const total = dates.length * GOALS.length;
+  const total = GOALS.length * dates.length;
   const done = entries.filter(e => e.done).length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
+  const percent = total ? Math.round((done / total) * 100) : 0;
 
   let grade = "D";
-  if (pct >= 90) grade = "S";
-  else if (pct >= 80) grade = "A";
-  else if (pct >= 70) grade = "B";
-  else if (pct >= 60) grade = "C";
+  if (percent >= 90) grade = "S";
+  else if (percent >= 80) grade = "A";
+  else if (percent >= 70) grade = "B";
+  else if (percent >= 60) grade = "C";
 
-  gradeText.textContent = `Grade ${grade} — ${pct}%`;
+  gradeText.textContent = `Grade ${grade} — ${percent}%`;
+
   gradeBar.className = `grade-fill ${grade}`;
-  gradeBar.style.width = `${pct}%`;
+  gradeBar.style.width = `${percent}%`;
 
-  const nextMap = { D: 60, C: 70, B: 80, A: 90 };
+  const nextTier = { D: 60, C: 70, B: 80, A: 90 };
+
   gradeNext.textContent =
     grade === "S"
       ? "Elite tier reached"
-      : `${nextMap[grade] - pct}% to reach next rank`;
+      : `${Math.max(0, nextTier[grade] - percent)}% to next rank`;
 }
 
-/* Streaks */
-function renderStreaks() {
-  let current = 0, best = 0;
+/* ================= STREAKS ================= */
 
-  dates.forEach(d => {
-    const full = entries.filter(e => e.date === d.iso && e.done).length === GOALS.length;
+function renderStreaks() {
+  let current = 0;
+  let best = 0;
+
+  dates.forEach(date => {
+    const full = entries.filter(e =>
+      e.date === date.iso && e.done
+    ).length === GOALS.length;
+
     if (full) {
       current++;
       best = Math.max(best, current);
-    } else current = 0;
+    } else {
+      current = 0;
+    }
   });
 
   streakNow.textContent = current;
   streakBest.textContent = best;
 }
 
-function goalStreak(name) {
-  let s = 0;
+function goalStreak(goalName) {
+  let streak = 0;
+
   for (let i = dates.length - 1; i >= 0; i--) {
-    if (entries.find(e => e.habit === name && e.date === dates[i].iso && e.done)) s++;
+    const entry = entries.find(e =>
+      e.habit === goalName &&
+      e.date === dates[i].iso &&
+      e.done
+    );
+
+    if (entry) streak++;
     else break;
   }
-  return s;
+
+  return streak;
 }
 
-async function save(habit, date, done) {
-  await fetch(`${API}/entry`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ habit, date, done })
-  });
-}
+/* ================= START ================= */
 
 load();
